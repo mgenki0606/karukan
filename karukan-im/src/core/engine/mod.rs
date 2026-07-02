@@ -472,6 +472,15 @@ impl InputMethodEngine {
             return result;
         }
 
+        if key.is_press
+            && key.keysym.is_shift()
+            && self.input_mode == InputMode::Alphabet
+            && self.pre_alphabet_mode.is_some()
+        {
+            self.exit_alphabet_mode();
+            return EngineResult::consumed();
+        }
+
         // Modifier-only keys (Shift, Ctrl, Alt_L, Super_L, etc.): pass through
         if key.keysym.is_modifier() {
             return EngineResult::not_consumed();
