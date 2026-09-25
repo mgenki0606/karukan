@@ -18,17 +18,32 @@ class KarukanInputController: IMKInputController {
     // MARK: - Event handling
 
     override func recognizedEvents(_ sender: Any!) -> Int {
-        Int(NSEvent.EventTypeMask.keyDown.rawValue)
+        Int(NSEvent.EventTypeMask.keyDown.rawValue | NSEvent.EventTypeMask.flagsChanged.rawValue)
     }
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         guard let event else { return false }
-        guard event.type == .keyDown else { return false }
         guard let client = sender as? (any IMKTextInput) else { return false }
 
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         // Never swallow Command shortcuts.
         if flags.contains(.command) { return false }
+
+        if event.type == .flagsChanged {
+            guard let modifierEvent = KeyCodeMap.translateModifier(event: event) else {
+                return false
+            }
+            guard
+                let result = engineClient.processKeySync(
+                    modifierEvent.key, isRelease: modifierEvent.isRelease)
+            else {
+                return false
+            }
+            apply(actions: result.actions, client: client)
+            return result.consumed
+        }
+
+        guard event.type == .keyDown else { return false }
 
         // JIS かな key (and Karabiner right-Command tap → かな): always
         // consume so the system doesn't process keyCode 104 after the engine

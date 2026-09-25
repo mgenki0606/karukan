@@ -278,6 +278,41 @@ fn test_shift_alphabet_reverts_to_hiragana_after_erase_to_empty() {
 }
 
 #[test]
+fn test_shift_alone_exits_temporary_alphabet_while_composing() {
+    let mut engine = InputMethodEngine::new();
+
+    engine.process_key(&press_shift('A'));
+    assert!(engine.input_mode == InputMode::Alphabet);
+    assert!(matches!(engine.state(), InputState::Composing { .. }));
+
+    let result = engine.process_key(&press_key(Keysym::SHIFT_L));
+    assert!(result.consumed);
+    assert!(engine.input_mode == InputMode::Hiragana);
+    assert_eq!(engine.preedit().unwrap().text(), "A");
+
+    engine.process_key(&press('k'));
+    engine.process_key(&press('a'));
+    assert_eq!(engine.preedit().unwrap().text(), "Aか");
+}
+
+#[test]
+fn test_shift_alone_exits_temporary_alphabet_with_live_conversion_enabled() {
+    let mut engine = make_live_conversion_engine();
+
+    engine.process_key(&press_shift('A'));
+    assert!(engine.input_mode == InputMode::Alphabet);
+    assert!(matches!(engine.state(), InputState::Composing { .. }));
+
+    let result = engine.process_key(&press_key(Keysym::SHIFT_L));
+    assert!(result.consumed);
+    assert!(engine.input_mode == InputMode::Hiragana);
+
+    engine.process_key(&press('k'));
+    engine.process_key(&press('a'));
+    assert_eq!(engine.preedit().unwrap().text(), "Aか");
+}
+
+#[test]
 fn test_shift_alphabet_from_katakana_reverts_to_katakana() {
     let mut engine = InputMethodEngine::new();
 

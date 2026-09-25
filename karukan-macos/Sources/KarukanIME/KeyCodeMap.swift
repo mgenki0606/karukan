@@ -18,6 +18,12 @@ struct EngineKeyEvent {
     let modifiers: KeyModifiers
 }
 
+/// A modifier-only event translated into the engine representation.
+struct EngineModifierEvent {
+    let key: EngineKeyEvent
+    let isRelease: Bool
+}
+
 /// Translates macOS key events into XKB keysyms, the representation the
 /// karukan engine shares with the fcitx5 frontend (see
 /// karukan-im/src/core/keycode.rs).
@@ -50,6 +56,12 @@ enum KeyCodeMap {
     static let eisuKeyCode: UInt16 = 102
     /// XKB Super_R keysym — the engine's katakana→hiragana toggle.
     static let superRKeysym: UInt32 = 0xffec
+    /// XKB Shift_L / Shift_R keysyms.
+    static let shiftLKeysym: UInt32 = 0xffe1
+    static let shiftRKeysym: UInt32 = 0xffe2
+
+    private static let shiftKeyCode: UInt16 = 56
+    private static let rightShiftKeyCode: UInt16 = 60
 
     static func modifiers(from flags: NSEvent.ModifierFlags) -> KeyModifiers {
         KeyModifiers(
@@ -58,6 +70,32 @@ enum KeyCodeMap {
             alt: flags.contains(.option),
             superKey: flags.contains(.command)
         )
+    }
+
+    /// Translate a macOS flagsChanged event for modifier-only keys.
+    static func translateModifier(
+        keyCode: UInt16, flags: NSEvent.ModifierFlags
+    ) -> EngineModifierEvent? {
+        let flags = flags.intersection(.deviceIndependentFlagsMask)
+        let keysym: UInt32
+        switch keyCode {
+        case shiftKeyCode:
+            keysym = shiftLKeysym
+        case rightShiftKeyCode:
+            keysym = shiftRKeysym
+        default:
+            return nil
+        }
+
+        let modifiers = modifiers(from: flags)
+        return EngineModifierEvent(
+            key: EngineKeyEvent(keysym: keysym, modifiers: modifiers),
+            isRelease: !modifiers.shift
+        )
+    }
+
+    static func translateModifier(event: NSEvent) -> EngineModifierEvent? {
+        translateModifier(keyCode: event.keyCode, flags: event.modifierFlags)
     }
 
     /// Translate a key-down event into an XKB keysym. Returns nil for keys

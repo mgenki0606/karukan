@@ -90,6 +90,30 @@ final class KeyCodeMapTests: XCTestCase {
         XCTAssertEqual(event?.modifiers.shift, true)
     }
 
+    func testLeftShiftModifierPressAndRelease() {
+        let press = KeyCodeMap.translateModifier(keyCode: 56, flags: [.shift])
+        XCTAssertEqual(press?.key.keysym, 0xffe1)
+        XCTAssertEqual(press?.key.modifiers.shift, true)
+        XCTAssertEqual(press?.isRelease, false)
+
+        let release = KeyCodeMap.translateModifier(keyCode: 56, flags: [])
+        XCTAssertEqual(release?.key.keysym, 0xffe1)
+        XCTAssertEqual(release?.key.modifiers.shift, false)
+        XCTAssertEqual(release?.isRelease, true)
+    }
+
+    func testRightShiftModifierPressAndRelease() {
+        let press = KeyCodeMap.translateModifier(keyCode: 60, flags: [.shift])
+        XCTAssertEqual(press?.key.keysym, 0xffe2)
+        XCTAssertEqual(press?.key.modifiers.shift, true)
+        XCTAssertEqual(press?.isRelease, false)
+
+        let release = KeyCodeMap.translateModifier(keyCode: 60, flags: [])
+        XCTAssertEqual(release?.key.keysym, 0xffe2)
+        XCTAssertEqual(release?.key.modifiers.shift, false)
+        XCTAssertEqual(release?.isRelease, true)
+    }
+
     func testNonAsciiNotTranslated() {
         // Kana input layouts produce non-ASCII characters; unsupported.
         XCTAssertNil(
